@@ -1,0 +1,81 @@
+package com.somlab.crud;
+
+import java.net.UnknownHostException;
+import java.util.Arrays;
+import java.util.List;
+
+import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+import com.mongodb.MongoClient;
+
+public class UpdateTest {
+
+	/**
+	 * @param args
+	 * @throws UnknownHostException 
+	 */
+	public static void main(String[] args) throws UnknownHostException {
+		DBCollection collection = createCollection();
+		
+		List<String> names = Arrays.asList("alice", "booby", "cathy", "david", "ethan");
+		for(String name : names) {
+			collection.insert(new BasicDBObject("_id", name));
+		}
+		
+		// 1 update
+		collection.update(new BasicDBObject("_id", "alice"),
+				new BasicDBObject("age", 24) );
+		
+		// 2 Update - overrides first (so 'age' will not appear in O/P).
+		collection.update(new BasicDBObject("_id", "alice"),
+				new BasicDBObject("gender", "F"));
+		
+		// 3 update - using '$set' so doesn't override.
+		collection.update(new BasicDBObject("_id", "alice"),
+				new BasicDBObject("$set", new BasicDBObject("status", "single")));
+		
+		// 4 update - passing upsert 'true' (& multi: 'false') to the overriden update method
+		collection.update(new BasicDBObject("_id", "frank"),
+				new BasicDBObject("$set", new BasicDBObject("gender", "M")), true, false);
+		
+		// 5 update - making updates to all documents in the collection
+		collection.update(new BasicDBObject(),
+				new BasicDBObject("$set", new BasicDBObject("title", "Dr.")), false, true);
+		
+		
+		/******  REMOVE   *****/
+		
+		collection.remove(new BasicDBObject()); // will remove all documents
+		collection.remove(new BasicDBObject("_id", "david")); // only remove selected document
+		
+		printCollection(collection);
+	}
+
+	private static void printCollection(DBCollection collection) {
+		DBCursor cursor = collection.find();
+		try {
+			
+			while(cursor.hasNext()) {
+				DBObject cur = cursor.next();
+				System.out.println(cur);
+			}
+			
+		} finally {
+			cursor.close();
+		}
+		
+	}
+
+	private static DBCollection createCollection() throws UnknownHostException {
+		MongoClient client = new MongoClient();
+		DB courseDB = client.getDB("course");
+		DBCollection collection = courseDB.getCollection("UpdateTest");		
+		collection.drop();
+		
+		return collection;
+	}
+
+}
